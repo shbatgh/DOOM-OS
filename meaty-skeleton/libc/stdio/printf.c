@@ -61,6 +61,41 @@ int printf(const char* restrict format, ...) {
 			if (!print(str, len))
 				return -1;
 			written += len;
+		} else if (*format == 'd') {
+			format++;
+			int num = va_arg(parameters, int);
+			char buffer[50];
+			int i = 0;
+
+			// Handle negative numbers
+			if (num < 0) {
+				buffer[i++] = '-';
+				num = -num;
+			}
+
+			// Generate digits in reverse order
+			do {
+				buffer[i++] = '0' + (num % 10);
+				num /= 10;
+			} while (num != 0);
+
+			buffer[i] = '\0'; // Null-terminate the string
+
+			// Reverse the digits
+			for (int j = 0; j < i / 2; j++) {
+				char temp = buffer[j];
+				buffer[j] = buffer[i - j - 1];
+				buffer[i - j - 1] = temp;
+			}
+
+			size_t len = strlen(buffer);
+			if (maxrem < len) {
+				// TODO: Set errno to EOVERFLOW.
+				return -1;
+			}
+			if (!print(buffer, len))
+				return -1;
+			written += len;
 		} else {
 			format = format_begun_at;
 			size_t len = strlen(format);

@@ -96,24 +96,26 @@ void terminal_putentryat(unsigned char c, uint8_t color, size_t x, size_t y) {
 	const size_t index = y * VGA_WIDTH + x;
 	if (c == '\n') {
 		terminal_row++;
-		terminal_column = 0;
+		terminal_column = -1;
 	} else {
 		terminal_buffer[index] = vga_entry(c, color);
 	}
 }
 
 void scroll() {
-	for (size_t y = VGA_HEIGHT; y > 0; y++) {
-		for (size_t x = 0; x < VGA_WIDTH; x++) {
-			size_t index = y * VGA_WIDTH + x;
-			terminal_buffer[index] = vga_entry(' ', terminal_color);
-			terminal_buffer[index - VGA_WIDTH] = terminal_buffer[index];
-		}
-	}
+	// Delete the first line of the terminal_buffer
 	for (size_t i = 0; i < VGA_WIDTH; i++) {
-		terminal_buffer[VGA_HEIGHT * VGA_WIDTH] = vga_entry(' ', terminal_color);
+		terminal_buffer[i] = vga_entry(' ', terminal_color);
 	}
 
+	// Set each line to equal the previous line of terminal_buffer
+	for (size_t y = 0; y < VGA_HEIGHT; y++) {
+		for (size_t x = 0; x < VGA_WIDTH; x++) {
+			size_t index = y * VGA_WIDTH + x;
+			terminal_buffer[index] = terminal_buffer[index + VGA_WIDTH];
+		}
+	}
+	
 	terminal_row = VGA_HEIGHT;
 }
 
@@ -122,18 +124,18 @@ void terminal_putchar(char c) {
 	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
 	if (++terminal_column == VGA_WIDTH) {
 		terminal_column = 0;
-	}
-	if (++terminal_row > VGA_HEIGHT) {
-		write_serial(terminal_row);
-		read_serial();
-		if (++terminal_column == VGA_WIDTH) {
-			//scroll();
+		if (++terminal_row > VGA_HEIGHT) {
+			//terminal_putentryat('z', terminal_color, terminal_column, terminal_row);
+			scroll();
 			terminal_column = 0;
 		}
 	}
-	
-	
+	if (terminal_row > VGA_HEIGHT) {
+		scroll();
+		terminal_column = 0;
+	}
 
+	
 	/*unsigned char uc = c;
 	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
 	if (++terminal_column == VGA_WIDTH) {
