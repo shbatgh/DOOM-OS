@@ -26,6 +26,9 @@ stack_top:
 _start:
 	movl $stack_top, %esp
 
+	# Call the function to set up the GDT
+    call setup_gdt
+
 	# Call the global constructors.
 	call _init
 
@@ -37,3 +40,33 @@ _start:
 1:	hlt
 	jmp 1b
 .size _start, . - _start
+
+# Function to set up the GDT
+setup_gdt:
+    lgdt gdtr
+    mov $0x10, %ax      # Data segment selector
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
+    mov %ax, %ss
+    ljmp $0x08, $.flush # Code segment selector
+
+.flush:
+    ret
+
+# GDT descriptor
+.section .data
+.align 8
+gdt:
+    .quad 0x0000000000000000  # Null segment
+    .quad 0x00CF9A000000FFFF  # Code segment
+    .quad 0x00CF92000000FFFF  # Data segment
+    .quad 0x00CFFA000000FFFF  # User mode code segment
+    .quad 0x00CFF2000000FFFF  # User mode data segment
+
+gdtr:
+    .word gdt_end - gdt - 1   # Limit
+    .long gdt                 # Base
+
+gdt_end:
